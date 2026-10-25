@@ -268,6 +268,50 @@ try {
     await page.waitForTimeout(400);
   });
 
+
+  await check('右键点击不会把气泡叫出来', async () => {
+    // 先制造一个真实选区（此时气泡是显示的）
+    await pick('#a');
+    await page.waitForSelector('.fr-pill', { timeout: 6000 });
+
+    const box = await page.locator('#b').boundingBox();
+    await page.mouse.click(box.x + 30, box.y + 12, { button: 'right' });
+    await page.waitForTimeout(600);
+
+    const after = await probe();
+    assert.equal(after.pill, false, '右键点击之后弹出了气泡，用户并没有要提问');
+  });
+
+  await check('右键打开菜单时已有气泡会收起', async () => {
+    await pick('#b');
+    await page.waitForSelector('.fr-pill', { timeout: 6000 });
+
+    const box = await page.locator('#b').boundingBox();
+    await page.mouse.click(box.x + 30, box.y + 12, { button: 'right' });
+    await page.waitForTimeout(400);
+
+    const after = await probe();
+    assert.equal(after.pill, false, '右键菜单弹出时气泡还挡着');
+  });
+
+  await check('打字时按 a 不会触发选区检测', async () => {
+    // 在可编辑区里敲键盘，不应影响气泡状态
+    await page.evaluate(() => {
+      const div = document.createElement('div');
+      div.id = 'typing-area';
+      div.contentEditable = 'true';
+      div.style.cssText = 'padding:10px;border:1px solid #ccc';
+      div.textContent = '在这里打字';
+      document.body.appendChild(div);
+      div.focus();
+    });
+    await page.keyboard.type('abc');
+    await page.waitForTimeout(500);
+
+    const after = await probe();
+    assert.equal(after.pill, false, '在输入框里打字时弹出了气泡');
+  });
+
   console.log('\n[D] 历史记录');
 
   await check('不同段落的历史记录标题不同', async () => {

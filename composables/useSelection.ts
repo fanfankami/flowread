@@ -136,13 +136,19 @@ export function useSelection(options: UseSelectionOptions): UseSelectionReturn {
     timer = window.setTimeout(settle, settleDelay);
   }
 
-  function onPointerUp(): void {
+  function onPointerUp(event: PointerEvent): void {
+    // 只响应主键（左键）。右键同样会派发 pointerup，
+    // 但用户右键是要打开上下文菜单，不是要提问 ——
+    // 此时弹气泡既有遮挡，又会把上一次的左键选区重新激活。
+    if (event.button !== 0) return;
     schedule();
   }
 
   function onKeyUp(event: KeyboardEvent): void {
-    // 键盘选择（Shift+方向键、Shift+Home、Ctrl+A）不产生 pointerup
-    if (event.key.startsWith('Arrow') || event.key === 'Shift' || event.key.toLowerCase() === 'a') {
+    // 键盘选择（Shift+方向键、Shift+Home、Ctrl+A）不产生 pointerup。
+    // 注意 'a' 必须配合 Ctrl/Cmd：否则正常打字每按一次 a 都会触发一次检测。
+    const isSelectAll = (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'a';
+    if (event.key.startsWith('Arrow') || event.key === 'Shift' || isSelectAll) {
       schedule();
     }
   }

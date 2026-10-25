@@ -389,8 +389,21 @@ function onPageScroll(): void {
   }
 }
 
+/**
+ * 右键唤起上下文菜单时把气泡收起来。
+ * 用户右键是要复制/搜索/翻译，气泡浮在那儿只会挡菜单。
+ */
+function onContextMenu(): void {
+  if (!pillDismissed.value) pillDismissed.value = true;
+}
+
 window.addEventListener('scroll', onPageScroll, { passive: true });
-onUnmounted(() => window.removeEventListener('scroll', onPageScroll));
+document.addEventListener('contextmenu', onContextMenu, true);
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', onPageScroll);
+  document.removeEventListener('contextmenu', onContextMenu, true);
+});
 
 // 扩展图标 / 快捷键要求展开浮窗
 watch(showSignal, () => showPanel(false));
