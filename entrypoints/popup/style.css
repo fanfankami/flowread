@@ -1,0 +1,19 @@
+/* 弹窗的基础重置。刻意保持极简：具体样式都在 App.vue 里，
+   这里只解决宽高与浏览器默认外边距，避免模板样式反过来污染组件。 */
+html {
+  color-scheme: light dark;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  width: 288px;
+}
+
+#app {
+  display: block;
+}
