@@ -1,0 +1,9 @@
+{
+  "extends": "./.wxt/tsconfig.json",
+  "compilerOptions": {
+    // WXT 默认开启 noUncheckedIndexedAccess，会让每一次 arr[i] 都变成 T | undefined。
+    // 本项目大量用下标遍历 Markdown 行、消息数组，开着它只会逼出一堆无意义的非空断言，
+    // 反而掩盖真正的空值风险。空值判断改用显式的 length / 边界检查来完成。
+    "noUncheckedIndexedAccess": false
+  }
+}

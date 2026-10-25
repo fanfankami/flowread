@@ -1,0 +1,36 @@
+{
+  "name": "flowread",
+  "description": "划词即问的网页阅读助手：上下文锁定、长对话压缩、完全本地",
+  "private": true,
+  "version": "0.3.0",
+  "type": "module",
+  "scripts": {
+    "dev": "wxt",
+    "build": "wxt build",
+    "zip": "wxt zip",
+    "compile": "vue-tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "e2e": "node scripts/e2e.mjs",
+    "verify": "npm run compile && npm run test && npm run build && npm run e2e",
+    "postinstall": "wxt prepare",
+    "e2e:buttons": "node scripts/e2e-buttons.mjs"
+  },
+  "dependencies": {
+    "@fontsource-variable/inter": "^5.3.0",
+    "vue": "^3.5.29"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.3.6",
+    "@wxt-dev/module-vue": "^1.0.3",
+    "playwright": "^1.64.1",
+    "typescript": "^5.9.3",
+    "vite": "^8.1.5",
+    "vitest": "^5.0.5",
+    "vue-tsc": "^3.2.5",
+    "web-ext": "^10.5.0",
+    "wxt": "^0.21.3"
+  },
+  "author": "fanfankami",
+  "license": "MIT"
+}
