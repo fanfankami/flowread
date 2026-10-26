@@ -66,5 +66,41 @@ export default defineContentScript({
     });
 
     ui.mount();
+
+    /**
+     * 扩展被卸载或禁用时，把自己从页面上彻底抹掉。
+     *
+     * Chrome 会销毁 content script 的 JS 上下文，但**不会**清理它注入的 DOM ——
+     * 于是 <flowread-root> 会一直挂在 body 上，用户卸载完扩展仍能看到浮窗和气泡。
+     * 页面不刷新的话，这东西会待到下次刷新为止。
+     */
+    function teardown(): void {
+      try {
+        ui.remove();
+      } catch {
+        // 上下文已失效时 remove 可能失败，直接动 DOM 兜底
+        document.getElementById('flowread-root')?.remove();
+      }
+      document.getElementById('flowread-highlight-style')?.remove();
+      document.querySelectorAll('style[data-flowread-lock]').forEach((el) => el.remove());
+    }
+
+    // WXT 提供的失效钩子：扩展被禁用/更新时会触发
+    ctx.onInvalidated(teardown);
+
+    /**
+     * 兜底轮询。onInvalidated 并不总能跑到（比如强制卸载），
+     * 所以额外探一次 chrome.runtime.id —— 上下文失效后访问它会抛异常。
+     */
+    const livenessTimer = window.setInterval(() => {
+      try {
+        if (!chrome.runtime?.id) throw new Error('invalidated');
+      } catch {
+        window.clearInterval(livenessTimer);
+        teardown();
+      }
+    }, 1500);
+
+    ctx.onInvalidated(() => window.clearInterval(livenessTimer));
   },
 });

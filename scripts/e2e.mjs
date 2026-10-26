@@ -521,6 +521,36 @@ try {
     assert.ok(!/Times New Roman/i.test(font), `字体异常: ${font}`);
     return font.split(',')[0];
   });
+
+  console.log('\n[8] 生命周期');
+
+  await check('扩展失效后自动从页面清除自己', async () => {
+    // 必须放在最后：重载扩展会让后续用例全部失效
+    const before = await page.evaluate(() => ({
+      host: Boolean(document.querySelector('#flowread-root')),
+      style: Boolean(document.getElementById('flowread-highlight-style')),
+    }));
+    assert.equal(before.host, true, '前置条件不成立：页面上没有浮窗');
+
+    const workers = context.serviceWorkers();
+    if (workers.length === 0) throw new Error('service worker 未就绪');
+    try {
+      await workers[0].evaluate(() => chrome.runtime.reload());
+    } catch {
+      // 重载瞬间连接必然断开，属于预期
+    }
+
+    await page.waitForTimeout(3600);
+
+    const after = await page.evaluate(() => ({
+      host: Boolean(document.querySelector('#flowread-root')),
+      style: Boolean(document.getElementById('flowread-highlight-style')),
+      lock: document.querySelectorAll('style[data-flowread-lock]').length,
+    }));
+    assert.equal(after.host, false, '扩展失效了，浮窗还挂在页面上');
+    assert.equal(after.style, false, '高亮样式残留');
+    assert.equal(after.lock, 0, '拖动锁样式残留');
+  });
 } finally {
   if (context) await context.close();
   server.close();
