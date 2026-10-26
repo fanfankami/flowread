@@ -45,8 +45,8 @@ onMounted(async () => {
     <SettingsView v-else :settings="settings" :show-close="false" @updated="settings = $event" @close="() => undefined" />
 
     <footer class="opt-foot">
-      <span>API Key 以明文保存在 chrome.storage.local 中，能读取本机浏览器数据的人也能读走它。</span>
-      <span>不建议在共用电脑上保存长期有效的 Key。</span>
+      <span>Key 保存在这台电脑的浏览器里，没有加密。能翻看你浏览器数据的人（比如共用这台电脑的人）也能拿到它。</span>
+      <span>公用电脑上建议不要保存长期有效的 Key；卸载扩展时会一并删除。</span>
     </footer>
   </div>
 </template>
