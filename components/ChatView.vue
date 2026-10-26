@@ -18,6 +18,8 @@ const props = defineProps<{
   errorMessage: string;
   /** 已被压缩进摘要的早期消息条数，0 表示没有压缩过 */
   compressedCount: number;
+  /** Agent 正在执行工具时的动作描述，空串表示没有 */
+  toolLabel?: string;
 }>();
 
 const emit = defineEmits<{
@@ -171,6 +173,12 @@ defineExpose({ focusInput });
     </div>
 
     <div ref="listEl" class="fr-list">
+      <!-- Agent 工具状态：让用户知道它在查文章，而不是卡住了 -->
+      <div v-if="toolLabel" class="fr-tool-status">
+        <span class="fr-tool-dot" aria-hidden="true"></span>
+        {{ toolLabel }}
+      </div>
+
       <div v-if="!hasMessages" class="fr-welcome">
         <div class="fr-welcome-icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" width="20" height="20">

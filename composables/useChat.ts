@@ -8,6 +8,7 @@ import { computed, onUnmounted, ref } from 'vue';
 import { EXPLAIN_QUESTION } from '@/shared/constants';
 import type { Anchor, ChatMessage, ChatRequest, Conversation, StreamEvent } from '@/types';
 import { backgroundClient } from './useBackground';
+import { runArticleTool } from '@/utils/article-index';
 
 interface ConversationDetail {
   conversation: Conversation | null;
@@ -19,6 +20,8 @@ export function useChat() {
   const conversation = ref<Conversation | null>(null);
   const streaming = ref(false);
   const errorMessage = ref('');
+  /** Agent 正在执行工具时显示在界面上的动作描述，如"正在全文搜索「扩容」" */
+  const toolLabel = ref('');
 
   let tempSeq = 0;
 
@@ -42,6 +45,11 @@ export function useChat() {
         break;
       }
 
+      case 'tool-status': {
+        toolLabel.value = event.label;
+        break;
+      }
+
       case 'delta': {
         const target = messages.value.find((m) => m.id === event.messageId);
         if (target) target.content += event.text;
@@ -49,6 +57,7 @@ export function useChat() {
       }
 
       case 'done': {
+        toolLabel.value = '';
         const target = messages.value.find((m) => m.id === event.messageId);
         if (target) {
           target.content = event.content;
@@ -66,6 +75,7 @@ export function useChat() {
       }
 
       case 'error': {
+        toolLabel.value = '';
         const target = messages.value.find((m) => m.id === event.messageId);
         if (target) {
           target.status = 'error';
@@ -84,6 +94,10 @@ export function useChat() {
 
   const unsubscribe = backgroundClient.onStream(handleEvent);
   onUnmounted(unsubscribe);
+
+  // Agent 的工具在页面侧执行：模型说"要搜 XX"，这里去 DOM 里搜，再把结果送回去
+  const unsubscribeTool = backgroundClient.onTool((call) => runArticleTool(call.name, call.args));
+  onUnmounted(unsubscribeTool);
 
   function pushLocalUser(content: string): void {
     messages.value.push({
@@ -185,6 +199,7 @@ export function useChat() {
     conversation,
     streaming,
     errorMessage,
+    toolLabel,
     canStop,
     canRegenerate,
     lastUserMessage,

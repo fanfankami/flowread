@@ -26,8 +26,9 @@ import {
 } from './db';
 import { getSettings } from './settings';
 import { streamDemo } from './providers/demo';
-import { streamOpenAICompatible } from './providers/openai';
+import { streamOpenAICompatible, streamWithTools } from './providers/openai';
 import { composeSummary, keepRecentCount } from './summarize';
+import { ARTICLE_TOOLS, describeToolCall } from '@/shared/tools';
 import type { PromptMessage, StreamParams } from './providers/types';
 
 /** 正在进行的请求，用于"停止生成"。key 是 conversationId。 */
@@ -157,11 +158,44 @@ async function ensureSummary(
   return { ...conversation, summary, compressedCount };
 }
 
-async function resolveProvider(settings: Awaited<ReturnType<typeof getSettings>>): Promise<(params: StreamParams) => Promise<void>> {
-  return settings.provider === 'demo' ? streamDemo : streamOpenAICompatible;
+export type EmitEvent =
+  | StreamEvent
+  /** 要求 content script 执行工具；和流式事件共用同一条通道 */
+  | { type: 'tool'; callId: string; name: string; args: Record<string, unknown> };
+
+export type Emit = (event: EmitEvent) => void;
+
+/**
+ * 等待 content script 回传的工具结果。
+ * 工具必须在页面里跑（要读 DOM），而 Agent 循环在 background，
+ * 所以这里用一张 Promise 表把异步往返接成同步语义。
+ */
+const pendingTools = new Map<string, (value: unknown) => void>();
+
+export function resolveToolResult(callId: string, result: unknown): void {
+  const settle = pendingTools.get(callId);
+  if (!settle) return;
+  pendingTools.delete(callId);
+  settle(result);
 }
 
-export type Emit = (event: StreamEvent) => void;
+function callContentTool(emit: Emit, name: string, args: Record<string, unknown>): Promise<unknown> {
+  const callId = `tool_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
+
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      pendingTools.delete(callId);
+      reject(new Error('工具执行超时，页面可能正在切换'));
+    }, 8000);
+
+    pendingTools.set(callId, (value) => {
+      clearTimeout(timer);
+      resolve(value);
+    });
+
+    emit({ type: 'tool', callId, name, args });
+  });
+}
 
 export async function startChat(request: ChatRequest, emit: Emit): Promise<void> {
   const settings = await getSettings();
@@ -232,8 +266,7 @@ export async function startChat(request: ChatRequest, emit: Emit): Promise<void>
 
   let buffer = '';
   try {
-    const streamFn = await resolveProvider(settings);
-    await streamFn({
+    const common = {
       messages,
       apiKey: settings.apiKey,
       baseUrl: settings.baseUrl,
@@ -241,16 +274,33 @@ export async function startChat(request: ChatRequest, emit: Emit): Promise<void>
       temperature: settings.temperature,
       maxTokens: settings.maxTokens,
       signal: controller.signal,
-      onDelta: (text) => {
+      onDelta: (text: string) => {
         buffer += text;
         emit({ type: 'delta', messageId: assistantId, text });
       },
-      demo: {
-        anchor: conversation.anchor,
-        question: request.question,
-        turn: history.length + 1,
-      },
-    });
+    };
+
+    if (settings.provider === 'demo') {
+      // 演示模式没有真实模型，工具调用无从谈起
+      await streamDemo({
+        ...common,
+        demo: {
+          anchor: conversation.anchor,
+          question: request.question,
+          turn: history.length + 1,
+        },
+      });
+    } else {
+      // 真实模型：让它自己决定要不要查全文
+      await streamWithTools({
+        ...common,
+        tools: ARTICLE_TOOLS,
+        onToolStart: (name, args) => {
+          emit({ type: 'tool-status', messageId: assistantId, label: describeToolCall(name, args) });
+        },
+        onToolCall: (name, args) => callContentTool(emit, name, args),
+      });
+    }
 
     await updateMessage(assistantId, { content: buffer, status: 'done' });
     emit({ type: 'done', messageId: assistantId, content: buffer });

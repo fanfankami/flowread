@@ -9,11 +9,11 @@
  * 用长连接 Port 而不是 sendMessage：流式回答需要持续推送，
  * 而且 Port 断开时能立刻察觉页面被关掉了。
  */
-import { startChat, stopChat } from '@/background/engine';
+import { resolveToolResult, startChat, stopChat, type EmitEvent } from '@/background/engine';
 import { clearAllConversations, deleteConversation, getConversation, listConversations, listMessages } from '@/background/db';
 import { getSettings, saveSettings, toPublicSettings } from '@/background/settings';
 import { testConnection } from '@/background/providers/openai';
-import type { AppSettings, ChatRequest, ClientMessage, StreamEvent } from '@/types';
+import type { AppSettings, ChatRequest, ClientMessage } from '@/types';
 
 function post(port: chrome.runtime.Port, message: unknown): void {
   try {
@@ -62,7 +62,14 @@ async function handleMessage(port: chrome.runtime.Port, message: ClientMessage):
       }
 
       case 'chat:start': {
-        const emit = (event: StreamEvent): void => post(port, { type: 'stream', event });
+        // 工具调用和流式事件共用一条通道，但消息形状不同，这里分流
+        const emit = (event: EmitEvent): void => {
+          if (event.type === 'tool') {
+            post(port, event);
+            return;
+          }
+          post(port, { type: 'stream', event });
+        };
         // 刻意不 await：只有立即返回，端口才能继续接收 chat:stop，
         // 否则"停止生成"会在一次完整回答结束后才被处理。
         void startChat(message.payload as ChatRequest, emit).catch((error: unknown) => {
@@ -72,6 +79,12 @@ async function handleMessage(port: chrome.runtime.Port, message: ClientMessage):
             message: error instanceof Error ? error.message : '生成失败',
           });
         });
+        reply(true);
+        return;
+      }
+
+      case 'tool:result': {
+        resolveToolResult(message.callId, message.result);
         reply(true);
         return;
       }

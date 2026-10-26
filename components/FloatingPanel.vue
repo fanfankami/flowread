@@ -84,6 +84,7 @@ const {
   conversation,
   streaming,
   errorMessage,
+  toolLabel,
   explain,
   ask,
   stop,
@@ -484,6 +485,7 @@ onMounted(async () => {
           :demo-mode="demoMode"
           :error-message="errorMessage"
           :compressed-count="conversation?.compressedCount ?? 0"
+          :tool-label="toolLabel"
           @ask="onSend"
           @stop="stop"
           @regenerate="regenerate"

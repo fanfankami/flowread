@@ -2,7 +2,7 @@
   "name": "flowread",
   "description": "划词即问的网页阅读助手：上下文锁定、长对话压缩、完全本地",
   "private": true,
-  "version": "0.3.2",
+  "version": "0.4.0",
   "type": "module",
   "scripts": {
     "dev": "wxt",
@@ -23,6 +23,7 @@
   "devDependencies": {
     "@types/chrome": "^0.3.6",
     "@wxt-dev/module-vue": "^1.0.3",
+    "happy-dom": "^21.0.4",
     "playwright": "^1.64.1",
     "typescript": "^5.9.3",
     "vite": "^8.1.5",

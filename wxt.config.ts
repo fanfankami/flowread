@@ -16,7 +16,7 @@ export default defineConfig({
   manifest: {
     name: 'FlowRead',
     description: '阅读助手：划词即问，上下文锁定，长对话不失忆',
-    version: '0.3.2',
+    version: '0.4.0',
     permissions: ['storage'],
     host_permissions: ['https://api.deepseek.com/*'],
     optional_host_permissions: ['https://*/*'],

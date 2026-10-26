@@ -49,7 +49,7 @@ const request: ChatRequest = {
 };
 
 function texts(conversation: Conversation, history: ChatMessage[]): string[] {
-  return buildContext(conversation, history, request).messages.map((m) => m.content);
+  return buildContext(conversation, history, request).messages.map((m) => m.content ?? '');
 }
 
 describe('buildContext · 压缩游标', () => {
@@ -108,7 +108,7 @@ describe('buildContext · 窗口裁剪', () => {
     const result = buildContext(makeConversation(), history, request);
     expect(result.compressed).toBe(true);
     // 最早的那条不该出现
-    expect(result.messages.some((m) => m.content.includes('第0条消息'))).toBe(false);
+    expect(result.messages.some((m) => (m.content ?? '').includes('第0条消息'))).toBe(false);
   });
 
   it('错误状态的消息被跳过', () => {

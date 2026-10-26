@@ -196,6 +196,8 @@ export interface ChatRequest {
 export type StreamEvent =
   | { type: 'start'; messageId: string; conversationId: string; conversation: Conversation }
   | { type: 'delta'; messageId: string; text: string }
+  /** Agent 正在执行工具，仅用于界面状态提示，不写进消息内容 */
+  | { type: 'tool-status'; messageId: string; label: string }
   | { type: 'done'; messageId: string; content: string }
   | { type: 'stopped'; messageId: string }
   | { type: 'error'; messageId: string; message: string };
@@ -207,6 +209,8 @@ export type ClientMessage = { requestId?: string } & (
   | { type: 'settings:test' }
   | { type: 'chat:start'; payload: ChatRequest }
   | { type: 'chat:stop'; conversationId: string }
+  /** content script 回传工具执行结果 */
+  | { type: 'tool:result'; callId: string; result: unknown }
   | { type: 'conversation:list'; limit?: number }
   | { type: 'conversation:get'; id: string }
   | { type: 'conversation:delete'; id: string }
@@ -216,5 +220,7 @@ export type ClientMessage = { requestId?: string } & (
 /** background → content 的推送 */
 export type ServerMessage =
   | { type: 'stream'; event: StreamEvent }
+  /** background 要求 content script 执行一个工具 */
+  | { type: 'tool'; callId: string; name: string; args: Record<string, unknown> }
   | { type: 'reply'; requestId: string; ok: true; data?: unknown }
   | { type: 'reply'; requestId: string; ok: false; error: string };

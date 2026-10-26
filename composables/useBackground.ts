@@ -18,10 +18,15 @@ type Pending = {
 
 type StreamListener = (event: StreamEvent) => void;
 
+/** background 要求执行一个工具；工具实现在页面侧（要读 DOM） */
+type ToolCall = { callId: string; name: string; args: Record<string, unknown> };
+type ToolHandler = (call: ToolCall) => Promise<unknown> | unknown;
+
 class BackgroundClient {
   private port: chrome.runtime.Port | null = null;
   private pending = new Map<string, Pending>();
   private listeners = new Set<StreamListener>();
+  private toolHandlers = new Set<ToolHandler>();
   private counter = 0;
 
   private ensurePort(): chrome.runtime.Port {
@@ -44,6 +49,11 @@ class BackgroundClient {
   }
 
   private handle(message: ServerMessage): void {
+    if (message.type === 'tool') {
+      void this.runTool(message);
+      return;
+    }
+
     if (message.type === 'stream') {
       for (const listener of this.listeners) listener(message.event);
       return;
@@ -57,6 +67,32 @@ class BackgroundClient {
       if (message.ok) entry.resolve(message.data);
       else entry.reject(new Error(message.error));
     }
+  }
+
+  /** 执行工具并把结果回传给 background。工具失败也要回传，否则那边只能等超时 */
+  private async runTool(call: ToolCall): Promise<void> {
+    let result: unknown = { error: '页面侧没有注册工具处理器' };
+
+    for (const handler of this.toolHandlers) {
+      try {
+        result = await handler(call);
+        break;
+      } catch (error) {
+        result = { error: error instanceof Error ? error.message : '工具执行失败' };
+      }
+    }
+
+    try {
+      await this.send({ type: 'tool:result', callId: call.callId, result }, 5000);
+    } catch {
+      // 回传失败就交给 background 侧的超时兜底
+    }
+  }
+
+  /** 注册工具处理器。返回取消注册函数。 */
+  onTool(handler: ToolHandler): () => void {
+    this.toolHandlers.add(handler);
+    return () => this.toolHandlers.delete(handler);
   }
 
   send<T>(message: ClientMessage, timeoutMs = 20000): Promise<T> {
