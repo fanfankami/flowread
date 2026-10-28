@@ -57,6 +57,14 @@
 
 这一步是它从"段落解释器"变成"阅读助手"的分界线。演示模式不会调用工具（没有真实模型）。
 
+**截图提问**
+
+浮窗输入框左边有个相机按钮，点一下截取当前视口，确认后随问题一起发出去。
+
+适合问「这个图表的趋势是什么」「这段代码哪里有问题」这类光靠文字说不清的场景。图片**不落库** —— 发完即弃，历史记录里只留文字，避免几十张截图把本地数据库撑爆。
+
+需要模型支持视觉输入（DeepSeek `deepseek-flash`、GPT-4o、Claude、Qwen-VL 等）。
+
 **外观可调**
 
 - 7 种字体（MiSans / 幼圆 / 思源黑体 / 等线 / 微软雅黑 / 思源宋体 / 等宽）
@@ -108,7 +116,7 @@ DeepSeek 用的是静态声明的域名权限；自定义地址会在保存时�
 
 任何 OpenAI 兼容的 `/chat/completions` 接口都能用：
 
-- DeepSeek（默认，`https://api.deepseek.com`）
+- DeepSeek（默认 `deepseek-flash`，原生支持图片输入，`https://api.deepseek.com`）
 - OpenAI（`https://api.openai.com/v1`）
 - Moonshot / SiliconFlow / 自建网关等
 

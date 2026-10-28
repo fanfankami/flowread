@@ -10,13 +10,27 @@ export interface ToolCallPayload {
   function: { name: string; arguments: string };
 }
 
+/** 图片内容块。只允许出现在 user 消息里 —— 放 system/assistant 会 400 */
+export interface ImageBlock {
+  type: 'image_url';
+  image_url: { url: string };
+}
+
+export interface TextBlock {
+  type: 'text';
+  text: string;
+}
+
+export type ContentBlock = TextBlock | ImageBlock;
+
 /**
  * 提示词消息。
  * assistant 可能同时带 content 和 tool_calls（模型先说"我查一下"再调工具），
  * tool 消息则必须带 tool_call_id 才能和请求对上。
  */
 export type PromptMessage =
-  | { role: 'system' | 'user'; content: string }
+  | { role: 'system'; content: string }
+  | { role: 'user'; content: string | ContentBlock[] }
   | { role: 'assistant'; content: string | null; tool_calls?: ToolCallPayload[] }
   | { role: 'tool'; content: string; tool_call_id: string };
 

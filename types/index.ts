@@ -209,6 +209,8 @@ export interface ChatRequest {
   isNew: boolean;
   /** 重新生成：删掉最后一条回答后重跑，不重复插入用户消息 */
   regenerate?: boolean;
+  /** 随问题一起发送的截图（data URL）。只在本次请求有效，不落库 */
+  image?: string;
   /** 当前阅读位置（仅用于 system prompt 里的"读者正在看"提示） */
   readingParagraph?: string;
 }
@@ -229,6 +231,8 @@ export type ClientMessage = { requestId?: string } & (
   | { type: 'settings:test' }
   | { type: 'chat:start'; payload: ChatRequest }
   | { type: 'chat:stop'; conversationId: string }
+  /** 截取当前可见视口，返回 data URL */
+  | { type: 'capture:tab' }
   /** content script 回传工具执行结果 */
   | { type: 'tool:result'; callId: string; result: unknown }
   | { type: 'conversation:list'; limit?: number }

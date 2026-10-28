@@ -126,7 +126,19 @@ export function buildContext(conversation: Conversation, history: ChatMessage[],
     messages.push({ role: message.role, content: message.content });
   }
 
-  messages.push({ role: 'user', content: request.question });
+  // 图片只能出现在 user 消息里（DeepSeek 对 system/assistant 带图会直接 400），
+  // 所以和本轮问题打包进同一个 content 数组
+  if (request.image) {
+    messages.push({
+      role: 'user',
+      content: [
+        { type: 'image_url', image_url: { url: request.image } },
+        { type: 'text', text: request.question },
+      ],
+    });
+  } else {
+    messages.push({ role: 'user', content: request.question });
+  }
 
   return { messages, compressed: dropped.length > 0 };
 }

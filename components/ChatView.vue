@@ -20,6 +20,8 @@ const props = defineProps<{
   compressedCount: number;
   /** Agent 正在执行工具时的动作描述，空串表示没有 */
   toolLabel?: string;
+  /** 待发送的截图 data URL，null 表示没有 */
+  pendingImage?: string | null;
 }>();
 
 const emit = defineEmits<{
@@ -28,6 +30,8 @@ const emit = defineEmits<{
   regenerate: [];
   switchAnchor: [];
   summarize: [];
+  capture: [];
+  clearImage: [];
   locate: [];
   openSettings: [];
 }>();
@@ -252,9 +256,31 @@ defineExpose({ focusInput });
       <MessageBubble v-for="message in messages" :key="message.id" :message="message" />
     </div>
 
+    <!-- 待发送的截图：让用户在发之前确认截的是哪块 -->
+    <div v-if="pendingImage" class="fr-image-preview">
+      <img :src="pendingImage" alt="待发送的截图" />
+      <div class="fr-image-meta">
+        <span>这张截图会随下一个问题一起发送</span>
+        <button type="button" @click="emit('clearImage')">移除</button>
+      </div>
+    </div>
+
     <p v-if="errorMessage" class="fr-banner is-error">{{ errorMessage }}</p>
 
     <div class="fr-composer">
+      <button
+        class="fr-composer-btn"
+        type="button"
+        title="截取当前屏幕提问"
+        :disabled="streaming"
+        @click="emit('capture')"
+      >
+        <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+          <path d="M2.5 5.5h2l1-1.5h4l1 1.5h2a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-10a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1z" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linejoin="round" />
+          <circle cx="8" cy="9" r="2.3" stroke="currentColor" stroke-width="1.2" fill="none" />
+        </svg>
+      </button>
+
       <textarea
         ref="inputEl"
         v-model="draft"

@@ -95,6 +95,21 @@ const {
 
 const chatViewRef = ref<InstanceType<typeof ChatView> | null>(null);
 
+/** 待发送的截图。不持久化，发完即弃 */
+const pendingImage = ref<string | null>(null);
+
+async function onCapture(): Promise<void> {
+  try {
+    // 截图必须由 background 调 chrome.tabs.captureVisibleTab，
+    // content script 拿不到这个 API
+    const dataUrl = await backgroundClient.send<string>({ type: 'capture:tab' }, 10000);
+    pendingImage.value = dataUrl;
+    errorMessage.value = '';
+  } catch (error) {
+    errorMessage.value = error instanceof Error ? error.message : '截图失败，请刷新页面后重试';
+  }
+}
+
 /**
  * 气泡是否已被用户"消费掉"。
  *
@@ -271,9 +286,11 @@ function onPanelPointerDown(): void {
 }
 
 function onSend(question: string): void {
+  const image = pendingImage.value ?? undefined;
+  pendingImage.value = null;
   const anchor = conversationAnchor.value ?? selectionAnchor.value;
   if (!anchor) return;
-  void ask(question, anchor, reading.value?.paragraph);
+  void ask(question, anchor, reading.value?.paragraph, image);
 }
 
 /** 把讨论对象换成当前阅读位置 */
@@ -525,6 +542,9 @@ onMounted(async () => {
           :error-message="errorMessage"
           :compressed-count="conversation?.compressedCount ?? 0"
           :tool-label="toolLabel"
+          :pending-image="pendingImage"
+          @capture="onCapture"
+          @clear-image="pendingImage = null"
           @ask="onSend"
           @stop="stop"
           @regenerate="regenerate"

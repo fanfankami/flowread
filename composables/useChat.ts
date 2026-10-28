@@ -110,7 +110,11 @@ export function useChat() {
     });
   }
 
-  async function dispatch(question: string, anchor: Anchor, options: { regenerate?: boolean; readingParagraph?: string } = {}): Promise<void> {
+  async function dispatch(
+    question: string,
+    anchor: Anchor,
+    options: { regenerate?: boolean; readingParagraph?: string; image?: string } = {},
+  ): Promise<void> {
     if (streaming.value) return;
 
     errorMessage.value = '';
@@ -123,6 +127,9 @@ export function useChat() {
       isNew: false,
       regenerate: options.regenerate,
       readingParagraph: options.readingParagraph,
+      // 截图只在本次请求有效，不写进消息内容 —— 一张 200KB 的图存进
+      // IndexedDB 会让历史库迅速膨胀，而且回看时也未必需要原图
+      image: options.image,
     };
 
     try {
@@ -144,7 +151,12 @@ export function useChat() {
   }
 
   /** 点「追问」或在输入框发送：进入连续对话。 */
-  async function ask(question: string, anchor: Anchor, readingParagraph?: string): Promise<void> {
+  async function ask(
+    question: string,
+    anchor: Anchor,
+    readingParagraph?: string,
+    image?: string,
+  ): Promise<void> {
     const trimmed = question.trim();
     if (!trimmed || streaming.value) return;
 

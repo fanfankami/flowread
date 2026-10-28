@@ -83,6 +83,28 @@ async function handleMessage(port: chrome.runtime.Port, message: ClientMessage):
         return;
       }
 
+      case 'capture:tab': {
+        void (async () => {
+          try {
+            const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+            if (!tab?.windowId) {
+              fail('取不到当前窗口，请重新打开浮窗');
+              return;
+            }
+            // jpeg + 质量 72：一张 1360×860 的视口大约 120-200KB，
+            // png 会大到 1MB 以上，而模型会把图缩到 800×800，质量差不了多少
+            const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, {
+              format: 'jpeg',
+              quality: 72,
+            });
+            reply(dataUrl);
+          } catch (error) {
+            fail(error instanceof Error ? error.message : '截图失败');
+          }
+        })();
+        return;
+      }
+
       case 'tool:result': {
         resolveToolResult(message.callId, message.result);
         reply(true);

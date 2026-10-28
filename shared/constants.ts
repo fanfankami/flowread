@@ -61,7 +61,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   provider: 'demo',
   baseUrl: 'https://api.deepseek.com',
   apiKey: '',
-  model: 'deepseek-chat',
+  model: 'deepseek-flash',
   temperature: 0.3,
   maxTokens: 1600,
   autoExplain: false,
@@ -112,6 +112,6 @@ export const FONT_OPTIONS = [
 /** 内置服务商地址。自定义服务商走用户填的 baseUrl。演示放最前，让新用户第一眼就看到"可以先试试"。 */
 export const PROVIDER_PRESETS: Record<string, { baseUrl: string; model: string; label: string }> = {
   demo: { baseUrl: '', model: DEMO_MODEL, label: '演示' },
-  deepseek: { baseUrl: 'https://api.deepseek.com', model: 'deepseek-chat', label: 'DeepSeek' },
+  deepseek: { baseUrl: 'https://api.deepseek.com', model: 'deepseek-flash', label: 'DeepSeek' },
   custom: { baseUrl: '', model: '', label: '自定义' },
 };
