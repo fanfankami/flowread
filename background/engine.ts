@@ -28,7 +28,8 @@ import { getSettings } from './settings';
 import { streamDemo } from './providers/demo';
 import { streamOpenAICompatible, streamWithTools } from './providers/openai';
 import { composeSummary, keepRecentCount } from './summarize';
-import { ARTICLE_TOOLS, describeToolCall } from '@/shared/tools';
+import { ARTICLE_TOOLS, WEB_SEARCH_TOOL, describeToolCall } from '@/shared/tools';
+import { webSearch } from './providers/search';
 import type { PromptMessage, StreamParams } from './providers/types';
 
 /** 正在进行的请求，用于"停止生成"。key 是 conversationId。 */
@@ -291,14 +292,28 @@ export async function startChat(request: ChatRequest, emit: Emit): Promise<void>
         },
       });
     } else {
-      // 真实模型：让它自己决定要不要查全文
+      // 工具分两类：文章检索必须在页面里跑（读 DOM），
+      // 联网搜索必须在 background 跑（页面上下文受 CORS 限制）
+      const tools: unknown[] = [...ARTICLE_TOOLS];
+      const searchReady = settings.webSearchEnabled && settings.webSearchApiKey.trim().length > 0;
+      if (searchReady) tools.push(WEB_SEARCH_TOOL);
+
       await streamWithTools({
         ...common,
-        tools: ARTICLE_TOOLS,
+        tools,
         onToolStart: (name, args) => {
           emit({ type: 'tool-status', messageId: assistantId, label: describeToolCall(name, args) });
         },
-        onToolCall: (name, args) => callContentTool(emit, name, args),
+        onToolCall: (name, args) => {
+          if (name === 'web_search') {
+            return webSearch(String(args.query ?? ''), {
+              apiKey: settings.webSearchApiKey,
+              maxResults: settings.webSearchResults,
+              signal: controller.signal,
+            });
+          }
+          return callContentTool(emit, name, args);
+        },
       });
     }
 

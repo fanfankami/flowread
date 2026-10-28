@@ -27,6 +27,7 @@ const emit = defineEmits<{
   stop: [];
   regenerate: [];
   switchAnchor: [];
+  summarize: [];
   locate: [];
   openSettings: [];
 }>();
@@ -44,6 +45,50 @@ const hasMessages = computed(() => props.messages.length > 0);
  * 同一章节内滚到下一段是很正常的阅读动作，如果每段都亮起按钮，
  * 它会一直闪，反而变成噪音。用户真想换段落，重新划词就行。
  */
+/**
+ * 导出为 Markdown。
+ *
+ * 在 shadow DOM 里用 Blob + a[download] 是可行的，
+ * 但 a 元素必须由我们创建且不被插入文档 —— 插进去会被页面样式影响。
+ */
+function exportMarkdown(): void {
+  const current = props.anchor;
+  if (!current) return;
+
+  const title = (current.heading || current.text.slice(0, 30)).replace(/\s+/g, ' ').trim();
+  const lines: string[] = [
+    `# ${title}`,
+    '',
+    `> ${current.text.replace(/\n/g, ' ')}`,
+    '',
+    `来源：${current.pageTitle || current.url}`,
+    '',
+    '---',
+    '',
+  ];
+
+  for (const message of props.messages) {
+    if (message.role === 'user') {
+      lines.push(`**问：** ${message.content.trim()}`, '');
+      continue;
+    }
+    if (message.status === 'error') {
+      lines.push(`> 生成失败：${message.error ?? ''}`, '');
+      continue;
+    }
+    if (!message.content.trim()) continue;
+    lines.push(message.content.trim(), '', '---', '');
+  }
+
+  const blob = new Blob([lines.join('\n')], { type: 'text/markdown;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `${title.slice(0, 24).replace(/[\\/:*?"<>|]/g, '_')}.md`;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
 const anchorDrifted = computed(() => {
   const reading = props.reading;
   const anchor = props.anchor;
@@ -154,9 +199,19 @@ defineExpose({ focusInput });
           </svg>
           正在讨论
         </span>
-        <button class="fr-anchor-locate" type="button" title="滚动到原文位置" @click="emit('locate')">
-          回到原文
-        </button>
+        <div class="fr-anchor-tools">
+          <button class="fr-anchor-locate" type="button" title="滚动到原文位置" @click="emit('locate')">
+            回到原文
+          </button>
+          <button
+            class="fr-anchor-locate"
+            type="button"
+            title="把这段对话导出为 Markdown 文件"
+            @click="exportMarkdown"
+          >
+            导出
+          </button>
+        </div>
       </div>
 
       <p v-if="anchor.heading" class="fr-anchor-heading">{{ anchor.heading }}</p>
@@ -187,6 +242,8 @@ defineExpose({ focusInput });
         </div>
         <p class="fr-welcome-title">针对上面这段提问</p>
         <p class="fr-welcome-desc">直接在下面输入你的问题；也可以回到页面重新划词，用气泡里的「解释 / 翻译 / 总结」一键处理。</p>
+        <button class="fr-welcome-link" type="button" @click="emit('summarize')">总结整篇文章</button>
+
         <button v-if="demoMode" class="fr-welcome-link" type="button" @click="emit('openSettings')">
           当前是演示模式，填入 API Key 使用真实模型
         </button>

@@ -5,7 +5,7 @@
  * 点击一条会话会回到对应的原文锚点 —— 但先做定位校验，
  * 找不到就明确告诉用户，而不是假装成功然后把页面滚到莫名其妙的位置。
  */
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import type { Conversation } from '@/types';
 import { locateAnchor, scrollToAnchor } from '@/utils/anchor';
 import { backgroundClient } from '@/composables/useBackground';
@@ -15,6 +15,25 @@ const emit = defineEmits<{ close: []; open: [id: string] }>();
 const items = ref<Conversation[]>([]);
 const loading = ref(true);
 const notice = ref('');
+
+/** 历史搜索：标题、选中原文、章节、页面标题都要能命中 */
+const keyword = ref('');
+
+const filtered = computed(() => {
+  const needle = keyword.value.trim().toLowerCase();
+  if (!needle) return items.value;
+  return items.value.filter((item) => {
+    const haystack = [
+      item.title,
+      item.anchor.text,
+      item.anchor.heading ?? '',
+      item.pageTitle ?? '',
+    ]
+      .join(' ')
+      .toLowerCase();
+    return haystack.includes(needle);
+  });
+});
 
 function formatTime(timestamp: number): string {
   const date = new Date(timestamp);
@@ -80,7 +99,7 @@ onMounted(refresh);
 
     <template v-else>
       <ul class="fr-history-list">
-        <li v-for="item in items" :key="item.id" class="fr-history-item">
+        <li v-for="item in filtered" :key="item.id" class="fr-history-item">
           <button class="fr-history-main" type="button" @click="emit('open', item.id)">
             <span class="fr-history-title">{{ item.title }}</span>
             <span class="fr-history-sub">

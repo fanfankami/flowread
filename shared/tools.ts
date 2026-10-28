@@ -56,6 +56,26 @@ export const ARTICLE_TOOLS = [
   },
 ];
 
+/** 联网搜索。只有用户开启并配了 Key 才会注入，否则模型看不到这个工具 */
+export const WEB_SEARCH_TOOL = {
+  type: 'function' as const,
+  function: {
+    name: 'web_search',
+    description:
+      '联网搜索互联网上的信息。**只在文章内容确实无法回答时使用** —— 比如用户问的概念文章里没提、需要最新版本号/价格/发布时间、或者要核实文章里的说法是否过时。文章里已经有的内容不要搜，直接引用文章。',
+    parameters: {
+      type: 'object',
+      properties: {
+        query: {
+          type: 'string',
+          description: '搜索关键词。提炼成 2-6 个词，不要用整句。',
+        },
+      },
+      required: ['query'],
+    },
+  },
+};
+
 /** 给界面看的动作描述，让用户知道 Agent 正在干什么 */
 export function describeToolCall(name: string, args: Record<string, unknown>): string {
   switch (name) {
@@ -65,6 +85,8 @@ export function describeToolCall(name: string, args: Record<string, unknown>): s
       return '正在读取文章大纲';
     case 'read_section':
       return `正在阅读章节「${String(args.heading ?? '')}」`;
+    case 'web_search':
+      return `正在联网搜索「${String(args.query ?? '')}」`;
     default:
       return '正在检索文章';
   }

@@ -224,7 +224,7 @@ try {
 
   await check('历史视图下划词也能出气泡', async () => {
     // 当前停在对话视图，切到历史
-    await page.locator('.fr-header-actions .fr-icon-btn').first().click();
+    await page.locator('.fr-header-actions .fr-icon-btn[title="历史记录"]').click();
     await page.waitForSelector('.fr-history', { timeout: 6000 });
 
     // 关键：以前这里写死了 view === 'chat'，在读历史时划词完全没反应
@@ -233,7 +233,7 @@ try {
 
     // 只验证气泡出现，不点解释 —— 否则会新建会话，把后面用例的消息计数打乱
     // 切回对话视图
-    await page.locator('.fr-header .fr-icon-btn').first().click();
+    await page.locator('.fr-header .fr-icon-btn[title="返回"]').click();
     await page.waitForSelector('.fr-list', { timeout: 6000 });
   });
 
@@ -418,7 +418,7 @@ try {
 
   await check('最小化与恢复', async () => {
     const before = await page.locator('.fr-panel').boundingBox();
-    await page.locator('.fr-header-actions .fr-icon-btn').nth(2).click();
+    await page.locator('.fr-header-actions .fr-icon-btn[title="最小化"]').click();
     await page.waitForTimeout(350);
     const mini = await page.locator('.fr-panel').boundingBox();
     assert.ok(mini.width < 60);
@@ -442,7 +442,7 @@ try {
   console.log('\n[6] 关闭与站点记忆');
 
   await check('关闭后浮窗彻底消失，不留任何入口', async () => {
-    await page.locator('.fr-header-actions .fr-icon-btn').nth(3).click();
+    await page.locator('.fr-header-actions .fr-icon-btn[title="关闭"]').click();
     await page.waitForTimeout(400);
     const state = await probe();
     assert.equal(state.panel, false, '关闭后浮窗仍在');

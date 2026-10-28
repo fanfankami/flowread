@@ -7,10 +7,13 @@
  */
 import { computed } from 'vue';
 import { SELECTION_ACTIONS } from '@/shared/constants';
+import type { CustomAction } from '@/types';
 
 const props = defineProps<{
   rect: { left: number; top: number; right: number; bottom: number } | null;
   busy: boolean;
+  /** 用户自定义的动作，接在内置动作后面 */
+  customActions?: CustomAction[];
 }>();
 
 const emit = defineEmits<{ action: [prompt: string]; ask: []; dismiss: [] }>();
@@ -20,8 +23,10 @@ const style = computed(() => {
   if (!rect) return { display: 'none' };
 
   const centerX = (rect.left + rect.right) / 2;
-  // 气泡现在约 300px 宽，两侧各留 155px 避免贴边被裁
-  const left = Math.max(155, Math.min(centerX, window.innerWidth - 155));
+  // 气泡宽度随按钮数量变化，按最宽情形留边距，避免贴边被裁
+  const buttons = 3 + (props.customActions?.length ?? 0) + 2;
+  const half = Math.min(210, 40 * buttons + 30);
+  const left = Math.max(half, Math.min(centerX, window.innerWidth - half));
 
   const placeAbove = rect.top > 58;
   const top = placeAbove ? rect.top - 46 : rect.bottom + 10;
@@ -43,6 +48,18 @@ const style = computed(() => {
       :class="{ 'is-primary': index === 0 }"
       type="button"
       :disabled="busy"
+      @click="emit('action', action.prompt)"
+    >
+      {{ action.label }}
+    </button>
+
+    <button
+      v-for="action in props.customActions ?? []"
+      :key="action.id"
+      class="fr-pill-btn is-custom"
+      type="button"
+      :disabled="busy"
+      :title="action.prompt"
       @click="emit('action', action.prompt)"
     >
       {{ action.label }}

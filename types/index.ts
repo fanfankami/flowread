@@ -135,6 +135,14 @@ export interface Conversation {
 export type ProviderId = 'demo' | 'deepseek' | 'custom';
 
 /** 配色风格。mono 是 Codex 那种"只有黑白灰"的克制风格，默认选它。 */
+export interface CustomAction {
+  id: string;
+  /** 气泡上显示的按钮文字，建议 2-4 个字 */
+  label: string;
+  /** 点击后发给模型的完整指令 */
+  prompt: string;
+}
+
 export type AccentId = 'mono' | 'blue' | 'green' | 'amber' | 'violet';
 
 /**
@@ -163,6 +171,18 @@ export interface AppSettings {
   followReadingPosition: boolean;
   /** 排除的站点（子串匹配，命中则不自动解释） */
   blockedSites: string[];
+
+  /* ---- 联网搜索 ---- */
+  /** 允许模型在文章里找不到答案时联网检索 */
+  webSearchEnabled: boolean;
+  /** Tavily 的 API Key，专为 LLM 设计的搜索接口 */
+  webSearchApiKey: string;
+  /** 单次最多返回几条结果 */
+  webSearchResults: number;
+
+  /* ---- 自定义动作 ---- */
+  /** 划词气泡上额外出现的按钮，最多 MAX_CUSTOM_ACTIONS 个 */
+  customActions: CustomAction[];
 
   /* ---- 外观 ---- */
   accent: AccentId;

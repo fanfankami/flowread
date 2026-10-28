@@ -18,7 +18,7 @@ import { useReadingPosition } from '@/composables/useReadingPosition';
 import { useSelection } from '@/composables/useSelection';
 import { useSitePreference } from '@/composables/useSitePreference';
 import { backgroundClient } from '@/composables/useBackground';
-import { DEFAULT_SETTINGS, EXPLAIN_QUESTION, STORAGE_KEYS } from '@/shared/constants';
+import { DEFAULT_SETTINGS, EXPLAIN_QUESTION, SUMMARIZE_PAGE_QUESTION, STORAGE_KEYS } from '@/shared/constants';
 import { buildAnchor, locateAnchor, scrollToAnchor } from '@/utils/anchor';
 import { getSurroundingText, normalizeParagraph } from '@/utils/dom-context';
 import { clampRect, defaultRect, minimizedRect } from '@/utils/geometry';
@@ -231,6 +231,38 @@ function onAskFromPill(): void {
   }
 
   window.setTimeout(() => chatViewRef.value?.focusInput(), 70);
+}
+
+/**
+ * 总结整篇文章。
+ *
+ * 不依赖选区 —— 用户可能只是想"这篇讲了什么"。
+ * 用当前阅读位置伪造一个锚点，因为会话必须绑定某段原文才能建立上下文。
+ * 真正的全文靠 Agent 工具去取，这里只是给它一个起点。
+ */
+function onSummarizePage(): void {
+  const now = reading.value;
+  const anchor: Anchor =
+    now
+      ? {
+          text: now.paragraph.slice(0, 240),
+          paragraph: now.paragraph,
+          heading: now.heading,
+          before: '',
+          after: '',
+          blockIndex: 0,
+          url: location.href,
+          pageTitle: document.title,
+        }
+      : (selectionAnchor.value as Anchor);
+
+  if (!anchor) return;
+
+  showPanel(false);
+  view.value = 'chat';
+  pillDismissed.value = true;
+  resetChat();
+  void explain(anchor, SUMMARIZE_PAGE_QUESTION, now?.paragraph);
 }
 
 /** 用户一旦开始操作浮窗，就不再需要那个选区气泡了 */
@@ -449,6 +481,13 @@ onMounted(async () => {
         </div>
 
         <div class="fr-header-actions" @pointerdown.stop>
+          <button class="fr-icon-btn" type="button" title="总结整篇文章" @click="onSummarizePage">
+            <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true">
+              <path d="M4 2.5h8a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1z" stroke="currentColor" stroke-width="1.2" fill="none" />
+              <path d="M5.6 6h4.8M5.6 8.4h4.8M5.6 10.8h2.8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+            </svg>
+          </button>
+
           <button class="fr-icon-btn" type="button" title="历史记录" @click="onOpenHistory">
             <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true">
               <circle cx="8" cy="8" r="5.6" stroke="currentColor" stroke-width="1.4" fill="none" />
@@ -491,6 +530,7 @@ onMounted(async () => {
           @regenerate="regenerate"
           @switch-anchor="onSwitchAnchor"
           @locate="onLocate"
+          @summarize="onSummarizePage"
           @open-settings="onOpenSettings"
         />
 
@@ -521,6 +561,7 @@ onMounted(async () => {
     v-bind="appearanceAttrs"
     :rect="pillRect"
     :busy="streaming"
+    :custom-actions="settings.customActions"
     @action="onExplain"
     @ask="onAskFromPill"
     @dismiss="clearSelection"

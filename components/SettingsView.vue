@@ -7,8 +7,8 @@
  * 2. 演示模式不消耗任何额度，但也不会真的分析你的文章
  */
 import { computed, ref, watch } from 'vue';
-import { ACCENT_OPTIONS, FONT_OPTIONS, FONT_SIZE_OPTIONS, PROVIDER_PRESETS } from '@/shared/constants';
-import type { AccentId, AppSettings, FontFamilyId, FontSizeId, ProviderId, PublicSettings } from '@/types';
+import { ACCENT_OPTIONS, FONT_OPTIONS, FONT_SIZE_OPTIONS, MAX_CUSTOM_ACTIONS, PROVIDER_PRESETS } from '@/shared/constants';
+import type { AccentId, AppSettings, CustomAction, FontFamilyId, FontSizeId, ProviderId, PublicSettings } from '@/types';
 import { backgroundClient } from '@/composables/useBackground';
 
 const props = defineProps<{ settings: PublicSettings; showClose?: boolean; inPanel?: boolean }>();
@@ -28,6 +28,34 @@ const follow = ref(props.settings.followReadingPosition);
 const accent = ref<AccentId>(props.settings.accent);
 const fontFamily = ref<FontFamilyId>(props.settings.fontFamily);
 const fontSize = ref<FontSizeId>(props.settings.fontSize);
+
+// 联网搜索
+const webSearchEnabled = ref(props.settings.webSearchEnabled);
+const webSearchApiKey = ref(props.settings.webSearchApiKey);
+const webSearchResults = ref(props.settings.webSearchResults);
+
+// 自定义动作
+const customActions = ref<CustomAction[]>([...props.settings.customActions]);
+const draftLabel = ref('');
+const draftPrompt = ref('');
+
+function addAction(): void {
+  const label = draftLabel.value.trim();
+  const prompt = draftPrompt.value.trim();
+  if (!label || !prompt) return;
+  if (customActions.value.length >= MAX_CUSTOM_ACTIONS) return;
+
+  customActions.value = [
+    ...customActions.value,
+    { id: `act_${Date.now().toString(36)}`, label: label.slice(0, 6), prompt },
+  ];
+  draftLabel.value = '';
+  draftPrompt.value = '';
+}
+
+function removeAction(index: number): void {
+  customActions.value = customActions.value.filter((_, i) => i !== index);
+}
 
 const busy = ref(false);
 const status = ref('');
@@ -124,6 +152,10 @@ async function save(): Promise<PublicSettings | null> {
     accent: accent.value,
     fontFamily: fontFamily.value,
     fontSize: fontSize.value,
+    webSearchEnabled: webSearchEnabled.value,
+    webSearchApiKey: webSearchApiKey.value.trim(),
+    webSearchResults: webSearchResults.value,
+    customActions: customActions.value,
   };
 
   // 留空表示"不改动"，避免用户只想改温度却把 Key 清空了
@@ -222,6 +254,56 @@ async function test(): Promise<void> {
           @click="fontSize = option.id"
         >
           {{ option.label }}
+        </button>
+      </div>
+    </section>
+
+    <section class="fr-field">
+      <label class="fr-label">联网搜索</label>
+      <label class="fr-toggle">
+        <input v-model="webSearchEnabled" type="checkbox" />
+        <span>文章里找不到答案时，允许模型联网检索</span>
+      </label>
+
+      <template v-if="webSearchEnabled">
+        <input
+          v-model="webSearchApiKey"
+          class="fr-input-line"
+          type="password"
+          placeholder="Tavily API Key（tvly- 开头）"
+          autocomplete="off"
+        />
+        <p class="fr-help">
+          开启后你提的问题会发送给 Tavily。免费额度每月 1000 次，够个人用。
+          模型只在文章确实回答不了时才搜，不会每句都联网。
+        </p>
+      </template>
+    </section>
+
+    <section class="fr-field">
+      <label class="fr-label">自定义动作 · 最多 {{ MAX_CUSTOM_ACTIONS }} 个</label>
+      <p class="fr-help">会作为额外按钮出现在划词气泡上，点击就按你的指令提问。</p>
+
+      <ul v-if="customActions.length > 0" class="fr-action-list">
+        <li v-for="(action, index) in customActions" :key="action.id">
+          <div class="fr-action-main">
+            <span class="fr-action-name">{{ action.label }}</span>
+            <span class="fr-action-prompt">{{ action.prompt }}</span>
+          </div>
+          <button class="fr-action-remove" type="button" title="删除" @click="removeAction(index)">×</button>
+        </li>
+      </ul>
+
+      <div v-if="customActions.length < MAX_CUSTOM_ACTIONS" class="fr-action-add">
+        <input v-model="draftLabel" class="fr-input-line fr-action-label" placeholder="按钮名" maxlength="6" />
+        <input v-model="draftPrompt" class="fr-input-line" placeholder="指令，如：找出这段可能出错的地方" />
+        <button
+          class="fr-btn fr-action-add-btn"
+          type="button"
+          :disabled="!draftLabel.trim() || !draftPrompt.trim()"
+          @click="addAction"
+        >
+          +
         </button>
       </div>
     </section>

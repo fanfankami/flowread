@@ -16,9 +16,9 @@ export default defineConfig({
   manifest: {
     name: 'FlowRead',
     description: '阅读助手：划词即问，上下文锁定，长对话不失忆',
-    version: '0.4.0',
+    version: '0.5.0',
     permissions: ['storage'],
-    host_permissions: ['https://api.deepseek.com/*'],
+    host_permissions: ['https://api.deepseek.com/*', 'https://api.tavily.com/*'],
     optional_host_permissions: ['https://*/*'],
     // 设置项比较多，用独立标签页打开，塞在弹窗里会滚得很憋屈
     options_ui: { page: 'options.html', open_in_tab: true },

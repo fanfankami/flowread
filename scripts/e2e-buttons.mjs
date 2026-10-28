@@ -246,7 +246,7 @@ try {
 
   await check('关闭面板后划词，气泡仍可出现，点解释能重新打开', async () => {
     // 关闭
-    await page.locator('.fr-header-actions .fr-icon-btn').nth(3).click();
+    await page.locator('.fr-header-actions .fr-icon-btn[title="关闭"]').click();
     await page.waitForTimeout(400);
     assert.equal((await probe()).panel, false, '面板没关掉');
 
@@ -258,7 +258,7 @@ try {
   });
 
   await check('最小化时划词不弹气泡', async () => {
-    await page.locator('.fr-header-actions .fr-icon-btn').nth(2).click();
+    await page.locator('.fr-header-actions .fr-icon-btn[title="最小化"]').click();
     await page.waitForTimeout(400);
     await pick('#b');
     const s = await probe();
@@ -315,7 +315,7 @@ try {
   console.log('\n[D] 历史记录');
 
   await check('不同段落的历史记录标题不同', async () => {
-    await page.locator('.fr-header-actions .fr-icon-btn').first().click();
+    await page.locator('.fr-header-actions .fr-icon-btn[title="历史记录"]').click();
     await page.waitForSelector('.fr-history', { timeout: 8000 });
     const titles = await page.locator('.fr-history-title').allTextContents();
     assert.ok(titles.length >= 2, `历史条目太少: ${titles.length}`);

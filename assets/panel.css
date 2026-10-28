@@ -289,6 +289,13 @@
   color: var(--fr-text-3);
 }
 
+.fr-anchor-tools {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+
 .fr-anchor-locate {
   font-family: var(--fr-font-mono);
   font-size: var(--fr-fs-2xs);
@@ -307,6 +314,13 @@
   color: var(--fr-accent);
   border-color: var(--fr-accent);
   transform: translateY(-1px);
+}
+
+.fr-anchor-tools {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
 }
 
 .fr-anchor-locate {
@@ -1011,6 +1025,83 @@
   flex: 0 0 auto;
 }
 
+/* 自定义动作列表 */
+.fr-action-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fr-action-list li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border: 1px solid var(--fr-border);
+  border-radius: var(--fr-radius-sm);
+}
+
+.fr-action-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.fr-action-name {
+  font-size: var(--fr-fs-sm);
+  font-weight: 500;
+}
+
+.fr-action-prompt {
+  font-size: var(--fr-fs-2xs);
+  color: var(--fr-text-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fr-action-remove {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--fr-text-3);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.fr-action-remove:hover {
+  background: var(--fr-surface-2);
+  color: var(--fr-danger);
+}
+
+.fr-action-add {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+
+.fr-action-label {
+  width: 68px;
+  flex: 0 0 auto;
+}
+
+.fr-action-add-btn {
+  flex: 0 0 auto;
+  width: 30px;
+  padding: 0;
+  height: 32px;
+}
+
 .fr-demo-note {
   margin: 0;
   padding: 9px 10px;
@@ -1135,6 +1226,14 @@
   gap: 2px;
   scrollbar-width: thin;
   scrollbar-color: var(--fr-surface-2) transparent;
+}
+
+.fr-history-search {
+  padding: 2px 2px 8px;
+  position: sticky;
+  top: 0;
+  background: var(--fr-bg);
+  z-index: 1;
 }
 
 .fr-history-empty {

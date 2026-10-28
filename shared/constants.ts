@@ -27,6 +27,10 @@ export const DEMO_MODEL = 'flowread-demo';
 /** 点「解释」时发送的固定指令。用常量而不是各处手写，是为了让缓存键能稳定命中。 */
 export const EXPLAIN_QUESTION = '请结合上下文解释这段内容。';
 
+/** 整页总结的固定指令。显式提示它可以查全文，否则模型只敢总结眼前那段 */
+export const SUMMARIZE_PAGE_QUESTION =
+  '请总结整篇文章：先用一句话点明主题，再按章节列出核心要点。文章内容较长时可以调用检索工具获取全文，不要只依据当前段落猜测。';
+
 /**
  * 划词后的快捷动作。
  *
@@ -64,6 +68,12 @@ export const DEFAULT_SETTINGS: AppSettings = {
   minSelectionLength: 4,
   followReadingPosition: true,
   blockedSites: ['mail.google.com', 'outlook.', 'bank', 'pay.'],
+  // 联网搜索默认关闭：会把你问的内容发给第三方，得先有意识地打开
+  webSearchEnabled: false,
+  webSearchApiKey: '',
+  webSearchResults: 5,
+  customActions: [],
+
   // 默认：无彩色（Codex 的克制感）+ MiSans + 标准字号
   accent: 'mono',
   fontFamily: 'misans',
@@ -78,6 +88,9 @@ export const ACCENT_OPTIONS = [
   { id: 'amber', label: '琥珀', color: '#F59E0B' },
   { id: 'violet', label: '紫', color: '#8B5CF6' },
 ] as const;
+
+/** 气泡宽度有限，超过这个数量会挤成两行，所以卡死上限 */
+export const MAX_CUSTOM_ACTIONS = 2;
 
 export const FONT_SIZE_OPTIONS = [
   { id: 'sm', label: '小' },
